@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>AR فسيفساء | تجربة سياحية</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+  <style>
+    body { margin:0; font-family:Tahoma, Arial; background:#f8f9fa; color:#222; }
+    header { background:#004d40; color:#fff; padding:14px; text-align:center }
+    .wrap { max-width:960px; margin:auto; padding:20px }
+    .card { background:#fff; border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:20px }
+    .cta { display:inline-block; padding:10px 16px; background:#00796b; color:#fff; border-radius:8px; text-decoration:none; margin-top:8px }
+    .cta:hover { background:#004d40 }
+    .qr { margin-top:12px; display:inline-block; padding:8px; border:1px dashed #555; border-radius:8px; background:#fafafa }
+    model-viewer { width:100%; height:400px; border-radius:12px; border:1px solid #ccc; background:#000 }
+    .muted{ color:#666; }
+    #scanner { width:100%; max-width:520px; margin:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>جولة واقع مُعزَّز للفسيفساء</h1>
+    <p>امسح رمز QR في الموقع الأثري وشاهد الفسيفساء كما لو أنك أمامها مباشرة</p>
+  </header>
+  <main class="wrap" id="app"></main>
+
+  <!-- حاوية الماسح تظهر فقط في وضع #scan -->
+  <div class="wrap" id="scan-wrap" style="display:none">
+    <div class="card">
+      <h2>مسح QR / Barcode</h2>
+      <p class="muted">قرّب كاميرا الهاتف من الرمز. عند النجاح سيتم فتح تجربة AR المناسبة تلقائيًا.</p>
+      <div id="scanner"></div>
+      <div id="scan-status" class="muted" style="margin-top:8px"></div>
+      <a class="cta" href="./">إغلاق</a>
+    </div>
+  </div>
+
+<script>
+// بيانات النماذج
+const MOSAICS = [
+  {
+    id: 'm1',
+    title: 'فسيفساء كنيسة مادبا',
+    site: 'مادبا – الأردن',
+    glb: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb',
+    usdz: 'https://modelviewer.dev/shared-assets/models/Astronaut.usdz',
+    poster: 'https://modelviewer.dev/assets/poster-astronaut.png',
+    caption: 'لوحة فسيفسائية تاريخية مشهورة بخريطتها للأراضي المقدسة.',
+    barcode: 'MOSAIC-M1'
+  }
+];
+
+const $app = document.getElementById('app');
+
+function secureHint(){
+  return location.protocol !== 'https:' ? `
+    <div class="card" style="border-color:#e0b700">
+      <b>تنبيه الأمان:</b>
+      <p>لفتح الواقع المعزَّز يجب فتح الرابط عبر <b>HTTPS</b>. الرجاء تجربة رفع الصفحة على استضافة HTTPS أو استخدام خدمة معاينة آمنة.</p>
+    </div>` : '';
+}
+
+function supportHint(){
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const android = /Android/.test(navigator.userAgent);
+  let msg = '';
+  if(ios){
+    msg = 'على أجهزة iOS سيظهر زر AR فقط عند توفير ملف USDZ. النموذج الحالي GLB للتجربة العامة.';
+  } else if(android){
+    msg = 'على أندرويد يستخدم Scene Viewer/WebXR. إن لم يظهر زر AR، جرّب كروم أحدث إصدار.';
+  } else {
+    msg = 'أنت على جهاز مكتبي. زر AR يظهر عادة على الموبايل؛ ما زال بإمكانك تحريك النموذج ثلاثي الأبعاد هنا.';
+  }
+  return `<div class="card"><p class="muted">${msg}</p></div>`;
+}
+
+function renderDetail(id){
+  const item = MOSAICS.find(m => m.id === id);
+  if(!item){ renderNotFound(); return; }
+
+  const shareURL = new URL(location.href);
+  document.getElementById('scan-wrap').style.display = 'none';
+  $app.innerHTML = `
+    ${secureHint()}
+    ${supportHint()}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+        <div>
+          <h2 style="margin:0">${item.title}</h2>
+          <p style="margin:4px 0" class="muted"><b>الموقع:</b> ${item.site}</p>
+        </div>
+        <a class="cta" href="#scan">مسح رمز جديد</a>
+      </div>
+      <model-viewer id="mv"
+        src="${item.glb}"
+        ios-src="${item.usdz}"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        poster="${item.poster}"
+        style="width:100%;height:70vh;"
+        shadow-intensity="1">
+        <div slot="ar-button" class="cta">عرض في الواقع المعزَّز</div>
+      </model-viewer>
+      <div id="mv-status" class="muted" style="margin-top:8px"></div>
+      <p>${item.caption}</p>
+      <div class="qr" id="qr-detail"></div>
+      <p>امسح هذا الكود لفتح المشهد على هاتفك مباشرة.</p>
+    </div>
+  `;
+  new QRCode(document.getElementById('qr-detail'), { text: shareURL.toString(), width: 144, height:144 });
+
+  const mv = document.getElementById('mv');
+  const status = document.getElementById('mv-status');
+  mv.addEventListener('load', () => { status.textContent = 'تم تحميل النموذج. إن لم يظهر زر AR فجهازك قد لا يدعمه.'; });
+  mv.addEventListener('error', (e) => { status.textContent = 'تعذّر تحميل النموذج. تحقق من الإنترنت أو رابط الملف.'; });
+  mv.addEventListener('ar-status', (e) => {
+    if(e.detail.status === 'failed') status.textContent = 'تعذّر بدء وضع AR. تحقق من صلاحيات الكاميرا والدعم على جهازك.';
+  });
+}
+
+function renderList(){
+  document.getElementById('scan-wrap').style.display = 'none';
+  $app.innerHTML = `
+    ${secureHint()}
+    <div class="card">
+      <h2>ابدأ الجولة</h2>
+      <p class="muted">اختر لوحة، أو <a href="#scan">امسح رمز QR</a> لفتح التجربة المرتبطة بالرمز.</p>
+      <div>
+        ${MOSAICS.map(m => `
+          <div style="margin-bottom:16px">
+            <h3 style="margin:0 0 6px">${m.title}</h3>
+            <p class="muted" style="margin:0 0 8px">${m.caption}</p>
+            <a class="cta" href="?id=${m.id}">فتح التجربة</a>
+            <div class="qr" id="qr-${m.id}" style="margin-inline-start:8px"></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  MOSAICS.forEach(m => {
+    const el = document.getElementById(`qr-${m.id}`);
+    const url = new URL(location.href);
+    url.search = `?id=${m.id}`;
+    new QRCode(el, { text: url.toString(), width:120, height:120 });
+  });
+}
+
+function renderNotFound(){
+  $app.innerHTML = `<div class="card"><h2>لم يتم العثور على اللوحة</h2><a href="./" class="cta">العودة للقائمة</a></div>`;
+}
+
+// وضع الماسح: يفتح عند #scan
+let html5scanner = null;
+async function openScanner(){
+  $app.innerHTML = '';
+  document.getElementById('scan-wrap').style.display = 'block';
+  const status = document.getElementById('scan-status');
+  if(html5scanner){ try { await html5scanner.stop(); } catch(e){} }
+  html5scanner = new Html5Qrcode("scanner");
+  const qrConfig = { fps: 10, qrbox: { width: 300, height: 300 } };
+  try{
+    await html5scanner.start({ facingMode: { exact: "environment" } }, qrConfig, (text) => {
+      status.textContent = `تمت قراءة الرمز: ${text}`;
+      try{
+        const u = new URL(text);
+        const id = new URLSearchParams(u.search).get('id');
+        if(id){ location.href = `?id=${id}`; return; }
+      }catch(_){}
+      const match = MOSAICS.find(m => m.barcode === text.trim());
+      if(match){ location.href = `?id=${match.id}`; return; }
+      status.textContent = 'رمز غير معروف. استخدم رابط يحتوي ?id= أو طابق قيمة barcode.';
+    });
+  }catch(err){
+    status.textContent = 'تعذر فتح الكاميرا. تأكد من منح صلاحية الكاميرا واستخدم HTTPS.';
+  }
+}
+
+function route(){
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  if(location.hash === '#scan') return openScanner();
+  if(id) return renderDetail(id);
+  // افتراضيًا افتح أول لوحة لتجربة سريعة
+  if(MOSAICS.length) return renderDetail(MOSAICS[0].id);
+  return renderList();
+}
+
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+</script>
+</body>
+</html>
