@@ -1,213 +1,92 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>AR فسيفساء | تجربة سياحية</title>
-  <!-- عارض WebAR -->
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <!-- توليد QR داخل الصفحة -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- ماسح QR/Barcode داخل الصفحة -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+  <title>Image-Tracked AR Overlay (MindAR)</title>
+  <!-- A‑Frame + MindAR (image tracking in the browser) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
   <style>
-    body { margin:0; font-family:Tahoma, Arial; background:#f8f9fa; color:#222; }
-    header { background:#004d40; color:#fff; padding:14px; text-align:center }
-    .wrap { max-width:960px; margin:auto; padding:20px }
-    .card { background:#fff; border:1px solid #ddd; border-radius:12px; padding:16px; margin-bottom:20px }
-    .cta { display:inline-block; padding:10px 16px; background:#00796b; color:#fff; border-radius:8px; text-decoration:none; margin-top:8px }
-    .cta:hover { background:#004d40 }
-    .qr { margin-top:12px; display:inline-block; padding:8px; border:1px dashed #555; border-radius:8px; background:#fafafa }
-    model-viewer { width:100%; height:70vh; border-radius:12px; border:1px solid #ccc; background:#000 }
-    .muted{ color:#666; }
-    #scanner { width:100%; max-width:520px; margin:auto; }
+    body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#0a0f12;color:#e9eef9}
+    header{position:sticky;top:0;background:#0e1624;padding:10px 16px;border-bottom:1px solid #1c2943}
+    .wrap{max-width:960px;margin:auto;padding:14px 16px}
+    .card{background:#101a2e;border:1px solid #203152;border-radius:12px;padding:14px;margin:12px 0}
+    .muted{color:#9fb3d9}
+    .kbd{display:inline-block;padding:2px 6px;border:1px solid #3a4f79;border-radius:6px;background:#0e1a30;color:#cfe0ff;font-family:ui-monospace,Consolas,monospace}
+    a.btn{display:inline-block;padding:8px 12px;background:#1b355b;border:1px solid #2e4a78;border-radius:10px;color:#e9eef9;text-decoration:none}
+    ol{margin:0 0 0 1.2rem}
   </style>
 </head>
 <body>
-  <header>
-    <h1>جولة واقع مُعزَّز للفسيفساء</h1>
-    <p>امسح رمز QR في الموقع الأثري وشاهد الفسيفساء كما لو أنك أمامها مباشرة</p>
-  </header>
+  <header><div class="wrap">Image‑Tracked AR • Overlay a picture exactly on a real‑world target</div></header>
 
-  <main class="wrap" id="app"></main>
-
-  <!-- حاوية الماسح تظهر فقط في وضع #scan -->
-  <div class="wrap" id="scan-wrap" style="display:none">
+  <div class="wrap">
     <div class="card">
-      <h2>مسح QR / Barcode</h2>
-      <p class="muted">قرّب كاميرا الهاتف من الرمز. عند النجاح سيتم فتح تجربة AR المناسبة تلقائيًا.</p>
-      <div id="scanner"></div>
-      <div id="scan-status" class="muted" style="margin-top:8px"></div>
-      <a class="cta" href="./">إغلاق</a>
+      <b>How this works:</b>
+      <p class="muted">Point your phone camera at the <i>target image</i>. When MindAR recognizes it, the <i>overlay image</i> will snap exactly onto it (like in your YouTube example).</p>
+      <p class="muted">Place your files here:
+        <span class="kbd">/assets/target.mind</span> (compiled target) and
+        <span class="kbd">/assets/overlay.png</span> (or .jpg).
+      </p>
     </div>
   </div>
 
-<script>
-// ===================== الإعدادات ===================== //
-// ملاحظات مهمة:
-// - يجب فتح الرابط عبر HTTPS وعلى هاتف يدعم WebXR أو Scene Viewer (أندرويد) أو Quick Look (iOS مع ملف USDZ).
-// - إن لم ترَ زر "عرض في الواقع المعزَّز" ستظل قادراً على تدوير النموذج ثلاثي الأبعاد.
+  <!-- ======= AR SCENE ======= -->
+  <a-scene
+    mindar-image="imageTargetSrc: ./assets/target.mind; filterMinCF:0.001; filterBeta: 0.01"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+    embedded
+    style="width:100vw;height:100vh;">
 
-const MOSAICS = [
-  {
-    id: 'm1',
-    title: 'فسيفساء كنيسة مادبا',
-    site: 'مادبا – الأردن',
-    glb: 'https://alihawwari84.github.io/ar/assets/istockphoto-93145704-612x612.glb',
-    usdz: 'https://alihawwari84.github.io/ar/assets/3dpea.com_istockphoto-93145704-612x612 (1).usdz',
-    poster: 'https://alihawwari84.github.io/ar/assets/istockphoto-93145704-612x612.jpg',
-    caption: 'لوحة فسيفسائية تاريخية مشهورة بخريطتها للأراضي المقدسة.',
-    // قيمة الباركود/QR التي ستفتح هذه اللوحة
-    barcode: 'MOSAIC-M1'
-  }
-];
+    <a-assets>
+      <!-- Replace with your actual overlay image -->
+      <img id="overlay" src="./assets/overlay.png" crossorigin="anonymous"/>
+    </a-assets>
 
-const $app = document.getElementById('app');
+    <!-- Camera -->
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-function secureHint(){
-  return location.protocol !== 'https:' ? `
-    <div class="card" style="border-color:#e0b700">
-      <b>تنبيه الأمان:</b>
-      <p>لفتح الواقع المعزَّز يجب فتح الرابط عبر <b>HTTPS</b>. الرجاء تجربة رفع الصفحة على استضافة HTTPS.</p>
-    </div>` : '';
-}
+    <!-- Anchor to first target (index 0 inside target.mind) -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <!-- This <a-image> is glued on top of the recognized target -->
+      <!-- width/height are in meters in AR space; keep same aspect ratio as your overlay -->
+      <a-image src="#overlay" position="0 0 0" rotation="0 0 0" width="0.6" height="0.4"></a-image>
+    </a-entity>
+  </a-scene>
 
-function supportHint(){
-  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const android = /Android/.test(navigator.userAgent);
-  let msg = '';
-  if(ios){
-    msg = 'على أجهزة iOS سيظهر زر AR فقط عند توفير ملف USDZ (مضاف هنا كتجربة).';
-  } else if(android){
-    msg = 'على أندرويد يستخدم Scene Viewer/WebXR. إن لم يظهر زر AR، جرّب كروم أحدث إصدار.';
-  } else {
-    msg = 'أنت على جهاز مكتبي. زر AR يظهر عادة على الموبايل؛ ما زال بإمكانك تحريك النموذج ثلاثي الأبعاد هنا.';
-  }
-  return `<div class="card"><p class="muted">${msg}</p></div>`;
-}
-
-function renderDetail(id){
-  const item = MOSAICS.find(m => m.id === id);
-  if(!item){ renderNotFound(); return; }
-  const shareURL = new URL(location.href);
-  document.getElementById('scan-wrap').style.display = 'none';
-  $app.innerHTML = `
-    ${secureHint()}
-    ${supportHint()}
+  <div class="wrap">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-        <div>
-          <h2 style="margin:0">${item.title}</h2>
-          <p style="margin:4px 0" class="muted"><b>الموقع:</b> ${item.site}</p>
-        </div>
-        <a class="cta" href="#scan">مسح رمز جديد</a>
-      </div>
-      <model-viewer id="mv"
-        src="${item.glb}"
-        ios-src="${item.usdz}"
-        ar
-        ar-modes="webxr scene-viewer quick-look"
-        camera-controls
-        auto-rotate
-        poster="${item.poster}"
-        shadow-intensity="1"
-        allow="camera *; xr-spatial-tracking *; fullscreen *; autoplay *">
-        <div slot="ar-button" class="cta">عرض في الواقع المعزَّز</div>
-      </model-viewer>
-      <div id="mv-status" class="muted" style="margin-top:8px"></div>
-      <p>${item.caption}</p>
-      <div class="qr" id="qr-detail"></div>
-      <p>امسح هذا الكود لفتح المشهد على هاتفك مباشرة.</p>
+      <b>Checklist (what to upload):</b>
+      <ol>
+        <li>Create <span class="kbd">assets/target.mind</span> using MindAR’s Target Compiler from a high‑detail photo of the physical place you want to track (e.g., the mosaic panel/plaque).</li>
+        <li>Export/prepare your overlay image as <span class="kbd">assets/overlay.png</span> (same aspect ratio as the real panel).</li>
+        <li>Deploy over <b>HTTPS</b> (Netlify/Vercel). Test on a modern mobile browser.</li>
+      </ol>
+      <p class="muted">Tip: Set the AR size by adjusting the <span class="kbd">width/height</span> of the <span class="kbd">&lt;a-image&gt;</span> (meters). If the real panel is ~60cm × 40cm, use <span class="kbd">0.6</span> × <span class="kbd">0.4</span>.</p>
+      <p><a class="btn" href="#how">Show me the exact steps</a></p>
     </div>
-  `;
 
-  new QRCode(document.getElementById('qr-detail'), { text: shareURL.toString(), width: 144, height:144 });
-
-  const mv = document.getElementById('mv');
-  const status = document.getElementById('mv-status');
-  mv.addEventListener('load', () => { status.textContent = 'تم تحميل النموذج. إن لم يظهر زر AR فجهازك قد لا يدعمه.'; });
-  mv.addEventListener('error', () => { status.textContent = 'تعذّر تحميل النموذج. تحقق من الإنترنت أو رابط الملف.'; });
-  mv.addEventListener('ar-status', (e) => {
-    if(e.detail.status === 'failed') status.textContent = 'تعذّر بدء وضع AR. تحقق من صلاحيات الكاميرا والدعم على جهازك.';
-  });
-}
-
-function renderList(){
-  document.getElementById('scan-wrap').style.display = 'none';
-  $app.innerHTML = `
-    ${secureHint()}
-    <div class="card">
-      <h2>ابدأ الجولة</h2>
-      <p class="muted">اختر لوحة، أو <a href="#scan">امسح رمز QR</a> لفتح التجربة المرتبطة بالرمز.</p>
-      <div>
-        ${MOSAICS.map(m => `
-          <div style="margin-bottom:16px">
-            <h3 style="margin:0 0 6px">${m.title}</h3>
-            <p class="muted" style="margin:0 0 8px">${m.caption}</p>
-            <a class="cta" href="?id=${m.id}">فتح التجربة</a>
-            <div class="qr" id="qr-${m.id}" style="margin-inline-start:8px"></div>
-          </div>
-        `).join('')}
-      </div>
+    <div id="how" class="card">
+      <b>Exact steps (do these now):</b>
+      <ol>
+        <li><b>Pick the target photo</b> (the real‑world surface you’ll track). It must have texture/details (not a plain surface).</li>
+        <li><b>Compile the target</b> to <span class="kbd">target.mind</span> (MindAR Target Compiler). Download it.</li>
+        <li><b>Add files to your repo:</b>
+          <ul>
+            <li><span class="kbd">/assets/target.mind</span></li>
+            <li><span class="kbd">/assets/overlay.png</span> (the picture you want to appear)</li>
+          </ul>
+        </li>
+        <li><b>Match dimensions</b>: edit the <span class="kbd">width</span>/<span class="kbd">height</span> on the <span class="kbd">&lt;a-image&gt;</span> so it matches the real panel size in meters.</li>
+        <li><b>Deploy</b> to an HTTPS host (Netlify/Vercel). Open on phone, allow camera.</li>
+        <li><b>Test at the site</b>: point at the real panel. The overlay should snap on top. Fine‑tune width/height if needed.</li>
+      </ol>
+      <p class="muted">Need a <b>video</b> instead of a still image? Replace <span class="kbd">&lt;a-image&gt;</span> with <span class="kbd">&lt;a-video src="#vid" ...&gt;</span> and add a muted, autoplaying MP4 in &lt;a-assets&gt;.</p>
     </div>
-  `;
-
-  MOSAICS.forEach(m => {
-    const el = document.getElementById(`qr-${m.id}`);
-    const url = new URL(location.href);
-    url.search = `?id=${m.id}`;
-    new QRCode(el, { text: url.toString(), width:120, height:120 });
-  });
-}
-
-function renderNotFound(){
-  $app.innerHTML = `<div class="card"><h2>لم يتم العثور على اللوحة</h2><a href="./" class="cta">العودة للقائمة</a></div>`;
-}
-
-// ===== ماسح الباركود/QR ===== //
-let html5scanner = null;
-async function openScanner(){
-  $app.innerHTML = '';
-  document.getElementById('scan-wrap').style.display = 'block';
-  const status = document.getElementById('scan-status');
-  if(html5scanner){ try { await html5scanner.stop(); } catch(e){} }
-  html5scanner = new Html5Qrcode('scanner');
-  const qrConfig = { fps: 10, qrbox: { width: 300, height: 300 } };
-  try{
-    await html5scanner.start({ facingMode: { exact: 'environment' } }, qrConfig, (text) => {
-      status.textContent = `تمت قراءة الرمز: ${text}`;
-      // 1) إذا كان الرابط يحوي ?id=
-      try{
-        const u = new URL(text);
-        const id = new URLSearchParams(u.search).get('id');
-        if(id){ location.href = `?id=${id}`; return; }
-      }catch(_){ /* ليس رابط */ }
-      // 2) أو إذا تطابق كود معرف مسبقًا
-      const match = MOSAICS.find(m => m.barcode === text.trim());
-      if(match){ location.href = `?id=${match.id}`; return; }
-      status.textContent = 'رمز غير معروف. استخدم رابط يحتوي ?id= أو اطبع باركود مطابقًا لقيمة barcode في البيانات.';
-    });
-  }catch(err){
-    status.textContent = 'تعذر فتح الكاميرا. تأكد من منح صلاحية الكاميرا واستخدم HTTPS.';
-  }
-}
-
-// ===== التوجيه البسيط ===== //
-function route(){
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id');
-  if(location.hash === '#scan') return openScanner();
-  if(!id && MOSAICS.length){
-    // افتح أول لوحة تلقائيًا لسهولة التجربة
-    renderDetail(MOSAICS[0].id);
-  } else {
-    id ? renderDetail(id) : renderList();
-  }
-}
-
-window.addEventListener('hashchange', route);
-window.addEventListener('load', route);
-</script>
+  </div>
 </body>
 </html>
